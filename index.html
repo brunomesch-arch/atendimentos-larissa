@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Atendimentos Larissa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one column app, sticky top bar with tabs; dashboard tiles then charts; form + ledger table */
+:root{
+  --bg:#f6f4f5; --surface:#ffffff; --sunken:#efebed; --fg:#1d1a1c; --muted:#6b6469; --line:#e3dde0;
+  --accent:#6d2e4c; --accent-fg:#ffffff; --accent-soft:#f1e4ea;
+  --good:#1f7a4d; --good-soft:#e2f2e8; --warn:#9a5b00; --warn-soft:#fbefd9; --bad:#b3261e; --bad-soft:#fbe4e2;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;
+  --font:"Albert Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#151214; --surface:#1f1b1e; --sunken:#282326; --fg:#f2edf0; --muted:#a89fa5; --line:#362f34;
+  --accent:#d98fb2; --accent-fg:#241019; --accent-soft:#3a2530;
+  --good:#6fd39c; --good-soft:#1d3327; --warn:#f0b457; --warn-soft:#3a2d17; --bad:#f28b82; --bad-soft:#3d1f1d;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#151214; --surface:#1f1b1e; --sunken:#282326; --fg:#f2edf0; --muted:#a89fa5; --line:#362f34;
+  --accent:#d98fb2; --accent-fg:#241019; --accent-soft:#3a2530;
+  --good:#6fd39c; --good-soft:#1d3327; --warn:#f0b457; --warn-soft:#3a2d17; --bad:#f28b82; --bad-soft:#3d1f1d;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--bg);color:var(--fg)}
+body{margin:0;font-family:var(--font);font-size:15px;line-height:1.45}
+.num{font-variant-numeric:tabular-nums}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:0 48px}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:8px 24px;padding-block:14px 0}
+.brand{display:flex;flex-direction:column;gap:0;padding-bottom:12px}
+.brand h1{font-size:19px;margin:0;font-weight:700;letter-spacing:-.01em}
+.brand span{font-size:12.5px;color:var(--muted)}
+nav.tabs{display:flex;gap:4px;margin-left:auto;overflow-x:auto}
+nav.tabs button{font:inherit;font-weight:600;font-size:14px;background:none;border:0;color:var(--muted);padding:10px 12px 12px;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+nav.tabs button:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+section.view{display:flex;flex-direction:column;gap:20px;padding-top:20px}
+.status{font-size:13px;color:var(--muted)}
+.banner{padding:10px 14px;border-radius:var(--r);font-size:14px}
+.banner.err{background:var(--bad-soft);color:var(--bad)}
+.banner.ok{background:var(--good-soft);color:var(--good)}
+
+/* login */
+.login{min-height:80vh;display:grid;place-items:center;padding-block:32px}
+.login form{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:28px 24px;width:100%;max-width:380px;display:flex;flex-direction:column;gap:14px}
+.login h1{margin:0;font-size:21px}.login p{margin:0;color:var(--muted);font-size:13.5px}
+nav.tabs button.sair{color:var(--muted);font-weight:500}
+/* filters */
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field label{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.02em}
+input,select,textarea{font:inherit;font-size:15px;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 10px;min-width:0;width:100%}
+textarea{resize:vertical;min-height:42px}
+input[readonly]{background:var(--sunken)}
+.btn{font:inherit;font-weight:600;font-size:14px;border-radius:8px;padding:10px 16px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn.danger{background:var(--bad);border-color:var(--bad);color:#fff}
+.btn.small{padding:6px 10px;font-size:13px}
+.btn.link{border:0;background:none;padding:0;color:var(--accent);font-size:13px}
+.btn:disabled{opacity:.5;cursor:default}
+
+/* kpis */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.kpi .l{font-size:12.5px;color:var(--muted);font-weight:600}
+.kpi .v{font-size:clamp(17px,4.4vw,22px);overflow-wrap:anywhere;font-weight:700;letter-spacing:-.01em}
+.kpi .s{font-size:12.5px;color:var(--muted)}
+.kpi.hl{border-color:var(--accent)}
+.grid2{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px}
+@media (max-width:860px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.panel h2{font-size:15px;margin:0;font-weight:700}
+.panel .sub{font-size:12.5px;color:var(--muted);margin-top:-8px}
+.acerto{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justify-content:space-between}
+.acerto .big{font-size:26px;font-weight:700}
+.chip{align-self:flex-start;display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:3px 8px;border-radius:99px;white-space:nowrap}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.good{background:var(--good-soft);color:var(--good)}
+.chip.bad{background:var(--bad-soft);color:var(--bad)}
+.chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+
+/* chart */
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.chart{position:relative}
+.chart svg{display:block;width:100%;height:auto}
+.chart text{fill:var(--muted);font-size:11px;font-family:var(--font)}
+.chart .grid{stroke:var(--line);stroke-width:1}
+.tip{position:absolute;pointer-events:none;background:var(--fg);color:var(--bg);font-size:12.5px;padding:8px 10px;border-radius:8px;white-space:nowrap;transform:translate(-50%,-100%);z-index:3}
+.tip b{display:block;margin-bottom:2px}
+.bars{display:flex;flex-direction:column;gap:10px}
+.bar-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:baseline;font-size:13.5px}
+.bar-row .bar-track{grid-column:1/-1;grid-row:2}
+.bar-row .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-track{height:12px;background:var(--sunken);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;background:var(--s1);border-radius:0 4px 4px 0}
+.bar-row .v{text-align:right;color:var(--muted);font-size:12.5px;white-space:nowrap}
+.empty{color:var(--muted);font-size:14px;padding:12px 0}
+
+/* table */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:9px 10px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;background:var(--sunken);position:sticky;top:0}
+td.r,th.r{text-align:right}
+tbody tr:hover{background:var(--sunken)}
+tfoot td{font-weight:700;background:var(--sunken)}
+td .muted{color:var(--muted);font-size:12px}
+.small{font-size:12.5px;color:var(--muted)}
+
+/* form */
+.form{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.form .span2{grid-column:span 2}.form .span4{grid-column:1/-1}
+@media (max-width:760px){.form{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:440px){.form{grid-template-columns:minmax(0,1fr)}.form .span2{grid-column:auto}}
+.calc{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+@media (max-width:560px){.calc{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.calc div{background:var(--sunken);padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.calc span{font-size:12px;color:var(--muted);font-weight:600}
+.calc b{font-size:18px}
+.calc .strong{background:var(--accent-soft)}
+.actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.hint{font-size:12px;color:var(--muted)}
+.cfg-row{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) auto;gap:8px;align-items:center}
+.cfg-row.b{grid-template-columns:minmax(0,2fr) minmax(0,1fr) auto}
+.cfg-head{font-size:12px;color:var(--muted);font-weight:600}
+@media (prefers-reduced-motion:no-preference){.bar-fill{transition:width .3s ease}}
+</style>
+</head>
+<body>
+
+<div class="login wrap" id="loginView" hidden>
+  <form id="loginForm">
+    <h1>Atendimentos Larissa</h1>
+    <p>Entre com o e-mail e a senha cadastrados.</p>
+    <div class="field"><label for="lgEmail">E-mail</label><input id="lgEmail" type="email" autocomplete="username" required></div>
+    <div class="field"><label for="lgSenha">Senha</label><input id="lgSenha" type="password" autocomplete="current-password" required></div>
+    <button class="btn primary" type="submit" id="lgBtn">Entrar</button>
+    <span class="hint" id="lgMsg"></span>
+  </form>
+</div>
+<div id="app" hidden>
+<header class="top">
+  <div class="wrap">
+    <div class="brand"><h1>Atendimentos Larissa</h1><span id="sync" class="num">Carregando dados…</span></div>
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="painel" aria-selected="true">Painel</button>
+      <button role="tab" data-tab="lancar" aria-selected="false">Lançamentos</button>
+      <button role="tab" data-tab="tabela" aria-selected="false">Tabela de custos</button>
+      <button id="btnSair" class="sair" hidden>Sair</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="globalMsg"></div>
+
+  <!-- PAINEL -->
+  <section class="view" id="v-painel">
+    <div class="filters">
+      <div class="field"><label for="fPeriodo">Período</label>
+        <select id="fPeriodo">
+          <option value="mes">Este mês</option><option value="mesant">Mês anterior</option>
+          <option value="3m">Últimos 3 meses</option><option value="12m" selected>Últimos 12 meses</option>
+          <option value="ano">Este ano</option><option value="anoant">Ano anterior</option>
+          <option value="tudo">Todo o histórico</option><option value="mesesp">Escolher mês…</option>
+        </select></div>
+      <div class="field" id="fMesWrap" hidden><label for="fMes">Mês</label><input type="month" id="fMes"></div>
+      <div class="field"><label for="fLocal">Clínica</label><select id="fLocal"><option value="">Todas</option></select></div>
+      <div class="field"><label for="fProc">Procedimento</label><select id="fProc"><option value="">Todos</option></select></div>
+    </div>
+
+    <div class="kpis" id="kpis"></div>
+
+    <div class="panel">
+      <div class="acerto">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <span class="chip warn" id="acertoChip">A repassar à clínica</span>
+          <span class="big num" id="acertoValor">R$ 0,00</span>
+          <span class="small" id="acertoInfo"></span>
+        </div>
+        <div class="actions" id="acertoActions"></div>
+      </div>
+      <div id="acertoPorLocal" class="small"></div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel">
+        <h2>Faturamento por mês</h2>
+        <div class="sub">Cada barra é o valor cobrado, dividido entre custo do procedimento, comissão da clínica e o que fica para a Larissa.</div>
+        <div class="legend"><span><i style="background:var(--s1)"></i>Líquido Larissa</span><span><i style="background:var(--s2)"></i>Comissão clínica</span><span><i style="background:var(--s3)"></i>Custo</span></div>
+        <div class="chart" id="chartMes"></div>
+      </div>
+      <div class="panel">
+        <h2>Por procedimento</h2>
+        <div class="sub">Faturamento no período, com quantidade e margem.</div>
+        <div class="bars" id="barsProc"></div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel">
+        <h2>Pacientes que mais retornam</h2>
+        <div class="sub">No período filtrado.</div>
+        <div class="tbl-wrap"><table><thead><tr><th>Paciente</th><th class="r">Atend.</th><th class="r">Faturado</th><th>Último</th></tr></thead><tbody id="topPac"></tbody></table></div>
+      </div>
+      <div class="panel">
+        <h2>Retorno de botox</h2>
+        <div class="sub">Última aplicação entre 4 e 8 meses atrás. Bom momento para chamar.</div>
+        <div class="tbl-wrap"><table><thead><tr><th>Paciente</th><th>Última aplicação</th><th class="r">Há</th></tr></thead><tbody id="retornos"></tbody></table></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Formas de pagamento</h2>
+      <div class="bars" id="barsPag"></div>
+    </div>
+  </section>
+
+  <!-- LANÇAMENTOS -->
+  <section class="view" id="v-lancar" hidden>
+    <div class="panel" id="formPanel">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <h2 id="formTitle">Novo atendimento</h2>
+        <span class="hint" id="formHint">Custo, margem e comissão são calculados pela Tabela de custos.</span>
+      </div>
+      <form id="form" class="form" autocomplete="off">
+        <div class="field span2"><label for="iPaciente">Paciente</label><input id="iPaciente" list="dlPac" required placeholder="Nome da paciente"><datalist id="dlPac"></datalist></div>
+        <div class="field"><label for="iData">Data do atendimento</label><input id="iData" type="date" required></div>
+        <div class="field"><label for="iLocal">Clínica</label><select id="iLocal" required></select></div>
+        <div class="field span2"><label for="iProc">Procedimento</label><select id="iProc" required></select></div>
+        <div class="field span2" id="iProcOutroWrap" hidden><label for="iProcOutro">Nome do procedimento</label><input id="iProcOutro" placeholder="Ex.: Skinbooster"></div>
+        <div class="field span2"><label for="iBrinde">Brinde</label><select id="iBrinde"></select></div>
+        <div class="field"><label for="iValor">Valor cobrado (R$)</label><input id="iValor" type="number" step="0.01" min="0" inputmode="decimal" required></div>
+        <div class="field"><label for="iCusto">Custo (R$)</label><input id="iCusto" type="number" step="0.01" min="0" inputmode="decimal" required>
+          <span class="hint" id="custoHint"></span></div>
+        <div class="field"><label for="iForma">Forma de pagamento</label><select id="iForma"></select></div>
+        <div class="field"><label for="iDet">Detalhe do pagamento</label><input id="iDet" placeholder="Ex.: 3x de 400"></div>
+        <div class="field span4"><label for="iObs">Observação</label><input id="iObs" placeholder="Opcional"></div>
+        <div class="span4 calc num" id="calc"></div>
+        <div class="span4 actions">
+          <button type="submit" class="btn primary" id="btnSalvar">Salvar atendimento</button>
+          <button type="button" class="btn" id="btnCancelar" hidden>Cancelar edição</button>
+          <span id="formMsg" class="hint"></span>
+        </div>
+      </form>
+    </div>
+
+    <div class="panel">
+      <h2>Atendimentos lançados</h2>
+      <div class="filters">
+        <div class="field" style="flex:1 1 200px"><label for="lBusca">Buscar</label><input id="lBusca" placeholder="Paciente ou procedimento"></div>
+        <div class="field"><label for="lMes">Mês</label><input id="lMes" type="month"></div>
+        <div class="field"><label for="lStatus">Repasse</label><select id="lStatus"><option value="">Todos</option><option value="pend">A repassar</option><option value="ok">Repassado</option></select></div>
+      </div>
+      <div class="tbl-wrap"><table class="num">
+        <thead><tr><th>Data</th><th>Paciente</th><th>Procedimento</th><th>Clínica</th><th class="r">Valor</th><th class="r">Custo</th><th class="r">Lucro</th><th class="r">Clínica</th><th class="r">Larissa</th><th>Pagamento</th><th>Repasse</th><th></th></tr></thead>
+        <tbody id="lista"></tbody><tfoot id="listaFoot"></tfoot>
+      </table></div>
+      <div class="actions"><button class="btn small" id="maisBtn" hidden>Mostrar mais</button><span class="small" id="listaInfo"></span></div>
+    </div>
+  </section>
+
+  <!-- TABELA -->
+  <section class="view" id="v-tabela" hidden>
+    <div class="panel">
+      <h2>Comissão da clínica</h2>
+      <div class="sub">Percentual sobre o lucro (valor cobrado menos custo). Vale para os próximos lançamentos.</div>
+      <div class="field" style="max-width:180px"><label for="cPct">% da clínica</label><input id="cPct" type="number" min="0" max="100" step="0.5"></div>
+    </div>
+    <div class="panel">
+      <h2>Procedimentos</h2>
+      <div class="sub">Custo de material por procedimento, sem brinde. O preço sugerido preenche o valor no lançamento e pode ser alterado.</div>
+      <div class="cfg-row cfg-head"><span>Procedimento</span><span>Custo (R$)</span><span>Preço sugerido (R$)</span><span></span></div>
+      <div id="cfgProcs" style="display:flex;flex-direction:column;gap:8px"></div>
+      <div><button class="btn small" id="addProc">Adicionar procedimento</button></div>
+    </div>
+    <div class="panel">
+      <h2>Brindes</h2>
+      <div class="cfg-row b cfg-head"><span>Brinde</span><span>Custo (R$)</span><span></span></div>
+      <div id="cfgBrindes" style="display:flex;flex-direction:column;gap:8px"></div>
+      <div><button class="btn small" id="addBrinde">Adicionar brinde</button></div>
+    </div>
+    <div class="panel">
+      <h2>Clínicas</h2>
+      <div class="sub">Uma por linha.</div>
+      <textarea id="cLocais" rows="3"></textarea>
+    </div>
+    <div class="actions"><button class="btn primary" id="salvarCfg">Salvar tabela</button><span class="hint" id="cfgMsg"></span></div>
+  </section>
+</main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
+<script>
+(function(){
+const DEFAULT_CFG={pctClinica:40,procedimentos:[],brindes:[{nome:"Nenhum",custo:0}],locais:[],formas:["Pix","Pix parcelado","Dinheiro","Pix e dinheiro","Crédito à vista","Crédito parcelado","Débito","Parcelado","À vista","Cortesia","Não pagou","Outro"]};
+const SUPABASE_URL="https://vnzmnwdvbagpeugzgntz.supabase.co", SUPABASE_KEY="sb_publishable_FRsc_1BpsTcaEYF4ULAvJw_fzTQTj5F";
+let sb=null, db=null, cfg=structuredClone(DEFAULT_CFG), cfgVersion=null, rows=[], loaded=false, editingId=null, listLimit=60;
+const $=s=>document.querySelector(s);
+const brl=new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"});
+const fmt=v=>brl.format(v||0);
+const fmtK=v=>Math.abs(v)>=1000?"R$ "+(v/1000).toLocaleString("pt-BR",{maximumFractionDigits:1})+" mil":fmt(v);
+const pct=v=>isFinite(v)?(v*100).toLocaleString("pt-BR",{maximumFractionDigits:1})+"%":"–";
+const MESES=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+const pad=n=>String(n).padStart(2,"0");
+const iso=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const today=()=>iso(new Date());
+const dBR=s=>s?s.slice(8,10)+"/"+s.slice(5,7)+"/"+s.slice(0,4):"";
+const mLabel=ym=>MESES[+ym.slice(5,7)-1]+"/"+ym.slice(2,4);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const round2=v=>Math.round((+v||0)*100)/100;
+const lucro=r=>(+r.valor||0)-(+r.custo||0);
+const larissa=r=>lucro(r)-(+r.comissao||0);
+function msg(el,text,kind){el.innerHTML=text?`<div class="banner ${kind||"ok"}">${esc(text)}</div>`:""}
+
+/* ---------- tabs ---------- */
+function showTab(t){
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===t));
+  ["painel","lancar","tabela"].forEach(v=>$("#v-"+v).hidden=v!==t);
+  try{localStorage.setItem("tab",t)}catch(e){}
+  if(t==="tabela")renderCfg();
+}
+document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+try{const t=location.hash.slice(1)||localStorage.getItem("tab");if(["painel","lancar","tabela"].includes(t))showTab(t)}catch(e){}
+
+/* ---------- period ---------- */
+function range(){
+  const p=$("#fPeriodo").value, n=new Date(), y=n.getFullYear(), m=n.getMonth();
+  const first=(yy,mm)=>iso(new Date(yy,mm,1)), last=(yy,mm)=>iso(new Date(yy,mm+1,0));
+  switch(p){
+    case "mes":return[first(y,m),last(y,m),true];
+    case "mesant":return[first(y,m-1),last(y,m-1),true];
+    case "3m":return[first(y,m-2),last(y,m),false];
+    case "12m":return[first(y,m-11),last(y,m),false];
+    case "ano":return[first(y,0),last(y,11),false];
+    case "anoant":return[first(y-1,0),last(y-1,11),false];
+    case "mesesp":{const v=$("#fMes").value||today().slice(0,7);const yy=+v.slice(0,4),mm=+v.slice(5,7)-1;return[first(yy,mm),last(yy,mm),true]}
+    default:return["0000-00-00","9999-12-31",false];
+  }
+}
+function monthsBetween(a,b){const out=[];let y=+a.slice(0,4),m=+a.slice(5,7);const ey=+b.slice(0,4),em=+b.slice(5,7);while(y<ey||(y===ey&&m<=em)){out.push(y+"-"+pad(m));m++;if(m>12){m=1;y++}}return out}
+
+/* ---------- dashboard ---------- */
+function renderPainel(){
+  if(!loaded)return;
+  const [a,b,single]=range(), loc=$("#fLocal").value, pr=$("#fProc").value;
+  const base=rows.filter(r=>(!loc||r.local===loc)&&(!pr||r.procedimento===pr));
+  const sel=base.filter(r=>r.data>=a&&r.data<=b);
+  const S=k=>sel.reduce((s,r)=>s+k(r),0);
+  const fat=S(r=>+r.valor||0), cus=S(r=>+r.custo||0), luc=fat-cus, com=S(r=>+r.comissao||0), lar=luc-com;
+  const pac=new Set(sel.map(r=>r.paciente.toLowerCase())).size;
+  const kp=[["Faturamento",fmt(fat),sel.length+" atendimentos"],["Custo dos procedimentos",fmt(cus),fat?pct(cus/fat)+" do faturamento":""],
+    ["Lucro bruto",fmt(luc),"Margem "+pct(fat?luc/fat:NaN)],["Comissão clínica",fmt(com),luc?pct(com/luc)+" do lucro":""],
+    ["Líquido Larissa",fmt(lar),fat?pct(lar/fat)+" do faturamento":"",true],["Ticket médio",fmt(sel.length?fat/sel.length:0),pac+" pacientes"]];
+  $("#kpis").innerHTML=kp.map(k=>`<div class="kpi${k[3]?" hl":""}"><span class="l">${k[0]}</span><span class="v num">${k[1]}</span><span class="s num">${k[2]}</span></div>`).join("");
+
+  // acerto (sempre total, independente do período)
+  const pend=rows.filter(r=>!r.acertado&&(+r.comissao||0)!==0);
+  const pv=pend.reduce((s,r)=>s+(+r.comissao||0),0);
+  $("#acertoValor").textContent=fmt(pv);
+  const desde=pend.map(r=>r.data).sort()[0];
+  $("#acertoInfo").textContent=pend.length?`${pend.length} atendimentos desde ${dBR(desde)} ainda não repassados`:"Tudo repassado. Nenhuma comissão pendente.";
+  $("#acertoChip").className="chip "+(pend.length?"warn":"good");
+  $("#acertoChip").textContent=pend.length?"A repassar à clínica":"Repasse em dia";
+  const porLoc={};pend.forEach(r=>porLoc[r.local]=(porLoc[r.local]||0)+(+r.comissao||0));
+  $("#acertoPorLocal").textContent=Object.keys(porLoc).length>1?Object.entries(porLoc).map(([k,v])=>k+": "+fmt(v)).join("   ·   "):"";
+  renderAcertoActions(pend,pv);
+
+  // monthly chart
+  let months;
+  if(single||$("#fPeriodo").value==="tudo"){
+    if($("#fPeriodo").value==="tudo"){const ds=base.map(r=>r.data).sort();months=ds.length?monthsBetween(ds[0].slice(0,7),ds[ds.length-1].slice(0,7)):[]}
+    else{const e=a.slice(0,7);const d=new Date(+e.slice(0,4),+e.slice(5,7)-12,1);months=monthsBetween(iso(d).slice(0,7),e)}
+  } else months=monthsBetween(a.slice(0,7),b.slice(0,7));
+  const byM={};months.forEach(m=>byM[m]={fat:0,cus:0,com:0,n:0});
+  base.forEach(r=>{const m=r.data.slice(0,7);if(byM[m]){byM[m].fat+=+r.valor||0;byM[m].cus+=+r.custo||0;byM[m].com+=+r.comissao||0;byM[m].n++}});
+  drawMonthly(months,byM,single?a.slice(0,7):null);
+
+  // procedures
+  const byP={};sel.forEach(r=>{const p=byP[r.procedimento]||(byP[r.procedimento]={fat:0,luc:0,n:0});p.fat+=+r.valor||0;p.luc+=lucro(r);p.n++});
+  const ps=Object.entries(byP).sort((x,y)=>y[1].fat-x[1].fat);const mx=ps.length?ps[0][1].fat:1;
+  $("#barsProc").innerHTML=ps.length?ps.map(([n,p])=>`<div class="bar-row"><span class="n" title="${esc(n)}">${esc(n)}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.max(2,p.fat/mx*100)}%"></div></div><span class="v num">${fmtK(p.fat)} · ${p.n}x · ${pct(p.fat?p.luc/p.fat:NaN)}</span></div>`).join(""):`<div class="empty">Nenhum atendimento no período.</div>`;
+
+  // payment
+  const byF={};sel.forEach(r=>{const f=r.forma||"Não informado";const p=byF[f]||(byF[f]={fat:0,n:0});p.fat+=+r.valor||0;p.n++});
+  const fs=Object.entries(byF).sort((x,y)=>y[1].fat-x[1].fat);const fx=fs.length?fs[0][1].fat:1;
+  $("#barsPag").innerHTML=fs.length?fs.map(([n,p])=>`<div class="bar-row"><span class="n">${esc(n)}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.max(2,p.fat/fx*100)}%;background:${n==="Não pagou"?"var(--bad)":"var(--s1)"}"></div></div><span class="v num">${fmtK(p.fat)} · ${p.n}x</span></div>`).join(""):`<div class="empty">Nenhum atendimento no período.</div>`;
+
+  // top patients
+  const byPac={};sel.forEach(r=>{const k=r.paciente.trim().toLowerCase();const p=byPac[k]||(byPac[k]={nome:r.paciente,n:0,fat:0,ult:""});p.n++;p.fat+=+r.valor||0;if(r.data>p.ult)p.ult=r.data});
+  const tp=Object.values(byPac).sort((x,y)=>y.fat-x.fat).slice(0,8);
+  $("#topPac").innerHTML=tp.length?tp.map(p=>`<tr><td>${esc(p.nome)}</td><td class="r num">${p.n}</td><td class="r num">${fmt(p.fat)}</td><td class="num">${dBR(p.ult)}</td></tr>`).join(""):`<tr><td colspan="4" class="empty">Nenhum atendimento no período.</td></tr>`;
+
+  // botox return (full history)
+  const lastBotox={};rows.forEach(r=>{if(/botox/i.test(r.procedimento)){const k=r.paciente.trim().toLowerCase();if(!lastBotox[k]||r.data>lastBotox[k].data)lastBotox[k]={nome:r.paciente,data:r.data}}});
+  const now=new Date();const days=s=>Math.floor((now-new Date(+s.slice(0,4),+s.slice(5,7)-1,+s.slice(8,10)))/864e5);
+  const ret=Object.values(lastBotox).map(p=>({...p,d:days(p.data)})).filter(p=>p.d>=120&&p.d<=240).sort((x,y)=>y.d-x.d);
+  $("#retornos").innerHTML=ret.length?ret.slice(0,12).map(p=>`<tr><td>${esc(p.nome)}</td><td class="num">${dBR(p.data)}</td><td class="r num">${Math.round(p.d/30.4)} meses</td></tr>`).join("")+(ret.length>12?`<tr><td colspan="3" class="small">E mais ${ret.length-12} pacientes nessa janela.</td></tr>`:""):`<tr><td colspan="3" class="empty">Nenhuma paciente nessa janela agora.</td></tr>`;
+}
+
+function drawMonthly(months,byM,hi){
+  const el=$("#chartMes");
+  if(!months.length){el.innerHTML=`<div class="empty">Sem dados.</div>`;return}
+  const W=720,H=260,L=56,R=8,T=12,B=28,iw=W-L-R,ih=H-T-B;
+  const max=Math.max(1,...months.map(m=>byM[m].fat));
+  const step=niceStep(max/4),top=Math.ceil(max/step)*step;
+  const y=v=>T+ih-(v/top)*ih, bw=iw/months.length, w=Math.max(3,Math.min(34,bw*.62));
+  let g="";
+  for(let v=0;v<=top+1e-6;v+=step){g+=`<line class="grid" x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L-8}" y="${y(v)+4}" text-anchor="end">${v>=1000?(v/1000).toLocaleString("pt-BR")+" mil":v}</text>`}
+  const every=Math.ceil(months.length/12);
+  months.forEach((m,i)=>{
+    const d=byM[m],cx=L+bw*i+bw/2,x=cx-w/2,lar=d.fat-d.cus-d.com;
+    const segs=[[d.cus,"var(--s3)"],[d.com,"var(--s2)"],[lar,"var(--s1)"]];
+    let acc=0;
+    segs.forEach(([v,c],si)=>{if(v<=0)return;const y0=y(acc),y1=y(acc+v);const h=Math.max(0,y0-y1-(acc>0?2:0));
+      g+=`<rect x="${x}" y="${y1}" width="${w}" height="${h}" rx="${si===2?3:1}" fill="${c}"/>`;acc+=v});
+    if(i%every===0||months.length<=12)g+=`<text x="${cx}" y="${H-8}" text-anchor="middle"${m===hi?' style="fill:var(--fg);font-weight:700"':""}>${mLabel(m)}</text>`;
+    g+=`<rect class="hit" data-m="${m}" x="${L+bw*i}" y="${T}" width="${bw}" height="${ih}" fill="transparent"/>`;
+  });
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Faturamento mensal">${g}</svg><div class="tip" hidden></div>`;
+  const tip=el.querySelector(".tip"),svg=el.querySelector("svg");
+  el.querySelectorAll(".hit").forEach(h=>{
+    const show=()=>{const m=h.dataset.m,d=byM[m];const lar=d.fat-d.cus-d.com;
+      tip.innerHTML=`<b>${mLabel(m)} · ${d.n} atend.</b>Faturamento ${fmt(d.fat)}<br>Custo ${fmt(d.cus)}<br>Clínica ${fmt(d.com)}<br>Larissa ${fmt(lar)}`;
+      const r=svg.getBoundingClientRect(),s=r.width/W,hx=(+h.getAttribute("x")+ +h.getAttribute("width")/2)*s;
+      tip.hidden=false;const tw=tip.offsetWidth;tip.style.left=Math.min(Math.max(hx,tw/2),r.width-tw/2)+"px";tip.style.top=(y(d.fat)*s-6)+"px";h.setAttribute("fill","rgba(127,127,127,.08)")};
+    const hide=()=>{tip.hidden=true;h.setAttribute("fill","transparent")};
+    h.addEventListener("mouseenter",show);h.addEventListener("mouseleave",hide);h.addEventListener("click",show);
+  });
+}
+function niceStep(v){const p=Math.pow(10,Math.floor(Math.log10(v||1)));const n=v/p;return(n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10)*p}
+
+let acertoConfirm=false;
+function renderAcertoActions(pend,pv){
+  const box=$("#acertoActions");
+  if(!pend.length){box.innerHTML="";return}
+  if(!acertoConfirm){box.innerHTML=`<button class="btn primary" id="btnAcerto">Registrar repasse à clínica</button>`;$("#btnAcerto").onclick=()=>{acertoConfirm=true;renderPainel()};return}
+  box.innerHTML=`<span class="small">Marcar ${pend.length} atendimentos (${fmt(pv)}) como repassados hoje?</span><button class="btn primary" id="okAcerto">Confirmar repasse</button><button class="btn" id="noAcerto">Voltar</button>`;
+  $("#noAcerto").onclick=()=>{acertoConfirm=false;renderPainel()};
+  $("#okAcerto").onclick=async()=>{
+    const btn=$("#okAcerto");btn.disabled=true;const hoje=today();let i=0;
+    try{
+      btn.textContent="Salvando…";
+      await db.markAcertado(pend.map(r=>r.id),hoje);
+      await db.addAcerto({data:hoje,valor:round2(pv),qtd:pend.length});
+      msg($("#globalMsg"),`Repasse de ${fmt(pv)} registrado.`,"ok");
+    }catch(e){msg($("#globalMsg"),writeErr(e),"err")}
+    acertoConfirm=false;renderPainel();
+  };
+}
+function writeErr(e){console.error(e);
+  if(e&&(e.status===401||e.code==="PGRST301"||/JWT/i.test(e.message||"")))return"Sua sessão expirou. Saia e entre de novo.";
+  return"Não foi possível salvar agora. Verifique a conexão e tente de novo."}
+
+/* ---------- form ---------- */
+let custoManual=false, lastSugerido=null;
+function procCfg(n){return cfg.procedimentos.find(p=>p.nome===n)}
+function brindeCfg(n){return cfg.brindes.find(p=>p.nome===n)}
+function fillSelects(){
+  const locais=[...new Set([...(cfg.locais||[]),...rows.map(r=>r.local).filter(Boolean)])];
+  const keep=(sel,html)=>{const v=sel.value;sel.innerHTML=html;if(v&&![...sel.options].some(o=>o.value===v))sel.insertAdjacentHTML("afterbegin",`<option>${esc(v)}</option>`);if(v)sel.value=v};
+  keep($("#iLocal"),locais.map(l=>`<option>${esc(l)}</option>`).join(""));
+  keep($("#fLocal"),`<option value="">Todas</option>`+locais.map(l=>`<option>${esc(l)}</option>`).join(""));
+  const allP=[...new Set(rows.map(r=>r.procedimento))].sort();
+  keep($("#fProc"),`<option value="">Todos</option>`+allP.map(p=>`<option>${esc(p)}</option>`).join(""));
+  keep($("#iProc"),cfg.procedimentos.map(p=>`<option>${esc(p.nome)}</option>`).join("")+`<option value="__outro">Outro…</option>`);
+  keep($("#iBrinde"),cfg.brindes.map(b=>`<option>${esc(b.nome)}</option>`).join(""));
+  keep($("#iForma"),`<option value="">Não informado</option>`+cfg.formas.map(f=>`<option>${esc(f)}</option>`).join(""));
+  const nomes=[...new Set(rows.map(r=>r.paciente.trim()))].sort((a,b)=>a.localeCompare(b,"pt-BR"));
+  $("#dlPac").innerHTML=nomes.map(n=>`<option value="${esc(n)}">`).join("");
+}
+function autoCusto(){
+  const p=$("#iProc").value==="__outro"?null:procCfg($("#iProc").value), b=brindeCfg($("#iBrinde").value);
+  return round2((p?+p.custo:0)+(b?+b.custo:0));
+}
+function onProcChange(){
+  const outro=$("#iProc").value==="__outro";$("#iProcOutroWrap").hidden=!outro;
+  const p=procCfg($("#iProc").value);const sug=p&&+p.preco?+p.preco:null;
+  if(sug!=null&&(!$("#iValor").value||+$("#iValor").value===lastSugerido))$("#iValor").value=sug;
+  lastSugerido=sug;
+  if(!custoManual)$("#iCusto").value=autoCusto();
+  updateCalc();
+}
+function updateCalc(){
+  const v=+$("#iValor").value||0,c=+$("#iCusto").value||0,l=v-c;
+  const pc=editingId?(rows.find(r=>r.id===editingId)||{}).pctClinica??cfg.pctClinica:cfg.pctClinica;
+  const com=round2(l*pc/100);
+  const auto=autoCusto();
+  $("#custoHint").innerHTML=custoManual?`Valor ajustado à mão. <button type="button" class="btn link" id="recalc">Usar tabela (${fmt(auto)})</button>`:`Pela tabela: procedimento + brinde`;
+  const rb=$("#recalc");if(rb)rb.onclick=()=>{custoManual=false;$("#iCusto").value=auto;updateCalc()};
+  $("#calc").innerHTML=`<div><span>Lucro bruto</span><b>${fmt(l)}</b></div><div><span>Margem</span><b>${pct(v?l/v:NaN)}</b></div><div><span>Comissão clínica (${String(pc).replace(".",",")}%)</span><b>${fmt(com)}</b></div><div class="strong"><span>Líquido Larissa</span><b>${fmt(l-com)}</b></div>`;
+}
+function resetForm(){
+  editingId=null;custoManual=false;lastSugerido=null;
+  $("#form").reset();$("#iData").value=today();
+  $("#formTitle").textContent="Novo atendimento";$("#btnSalvar").textContent="Salvar atendimento";$("#btnCancelar").hidden=true;
+  $("#iValor").value="";onProcChange();
+}
+function editRow(id){
+  const r=rows.find(x=>x.id===id);if(!r)return;
+  editingId=id;custoManual=true;
+  if(![...$("#iProc").options].some(o=>o.value===r.procedimento))$("#iProc").insertAdjacentHTML("afterbegin",`<option>${esc(r.procedimento)}</option>`);
+  if(![...$("#iBrinde").options].some(o=>o.value===r.brinde))$("#iBrinde").insertAdjacentHTML("beforeend",`<option>${esc(r.brinde)}</option>`);
+  if(r.forma&&![...$("#iForma").options].some(o=>o.value===r.forma))$("#iForma").insertAdjacentHTML("beforeend",`<option>${esc(r.forma)}</option>`);
+  if(![...$("#iLocal").options].some(o=>o.value===r.local))$("#iLocal").insertAdjacentHTML("beforeend",`<option>${esc(r.local)}</option>`);
+  $("#iPaciente").value=r.paciente;$("#iData").value=r.data;$("#iLocal").value=r.local;$("#iProc").value=r.procedimento;$("#iProcOutroWrap").hidden=true;
+  $("#iBrinde").value=r.brinde||"Nenhum";$("#iValor").value=r.valor;$("#iCusto").value=r.custo;$("#iForma").value=r.forma||"";$("#iDet").value=r.pagamentoDetalhe||"";$("#iObs").value=r.obs||"";
+  lastSugerido=null;
+  $("#formTitle").textContent="Editando atendimento de "+r.paciente;$("#btnSalvar").textContent="Salvar alterações";$("#btnCancelar").hidden=false;
+  updateCalc();showTab("lancar");$("#formPanel").scrollIntoView({behavior:"smooth",block:"start"});
+}
+$("#iProc").onchange=onProcChange;$("#iBrinde").onchange=()=>{if(!custoManual)$("#iCusto").value=autoCusto();updateCalc()};
+$("#iValor").oninput=updateCalc;$("#iCusto").oninput=()=>{custoManual=true;updateCalc()};
+$("#btnCancelar").onclick=resetForm;
+$("#form").onsubmit=async e=>{
+  e.preventDefault();if(!db){$("#formMsg").textContent="Painel sem conexão com os dados.";return}
+  const procNome=$("#iProc").value==="__outro"?$("#iProcOutro").value.trim():$("#iProc").value;
+  if(!procNome){$("#formMsg").textContent="Informe o nome do procedimento.";return}
+  const valor=round2($("#iValor").value),custo=round2($("#iCusto").value);
+  const prev=editingId?rows.find(r=>r.id===editingId):null;
+  const pc=prev?(prev.pctClinica??cfg.pctClinica):cfg.pctClinica;
+  let comissao=round2((valor-custo)*pc/100);
+  if(prev&&prev.comissaoManual&&prev.valor===valor&&prev.custo===custo)comissao=prev.comissao;
+  const data={paciente:$("#iPaciente").value.trim().replace(/\s+/g," "),data:$("#iData").value,local:$("#iLocal").value,procedimento:procNome,brinde:$("#iBrinde").value||"Nenhum",
+    valor,custo,pctClinica:pc,comissao,comissaoManual:!!(prev&&prev.comissaoManual&&comissao===prev.comissao),forma:$("#iForma").value,pagamentoDetalhe:$("#iDet").value.trim(),obs:$("#iObs").value.trim(),
+    acertado:prev?!!prev.acertado:false,acertoData:prev?prev.acertoData||null:null,origem:prev?prev.origem||"painel":"painel",criadoEm:prev?prev.criadoEm:new Date().toISOString(),atualizadoEm:new Date().toISOString()};
+  if(prev&&prev.procedimentoOriginal)data.procedimentoOriginal=prev.procedimentoOriginal;
+  const btn=$("#btnSalvar");btn.disabled=true;
+  try{
+    await db.saveRow(editingId,data);
+    const nome=data.paciente;resetForm();$("#formMsg").textContent=(prev?"Alterações salvas: ":"Atendimento salvo: ")+nome+".";
+    setTimeout(()=>{$("#formMsg").textContent=""},5000);
+  }catch(err){$("#formMsg").textContent=writeErr(err)}
+  btn.disabled=false;
+};
+
+/* ---------- list ---------- */
+let delConfirm=null;
+function renderLista(){
+  if(!loaded)return;
+  const q=$("#lBusca").value.trim().toLowerCase(),m=$("#lMes").value,st=$("#lStatus").value;
+  const f=rows.filter(r=>(!q||(r.paciente+" "+r.procedimento).toLowerCase().includes(q))&&(!m||r.data.startsWith(m))&&(!st||(st==="pend"?!r.acertado:r.acertado)))
+    .sort((a,b)=>b.data.localeCompare(a.data)||(b.criadoEm||"").localeCompare(a.criadoEm||""));
+  const shown=f.slice(0,listLimit);
+  $("#lista").innerHTML=shown.length?shown.map(r=>{
+    const pag=r.forma==="Não pagou"?`<span class="chip bad">Não pagou</span>`:esc(r.forma||"–")+(r.pagamentoDetalhe&&r.pagamentoDetalhe!==r.forma?`<div class="muted">${esc(r.pagamentoDetalhe)}</div>`:"");
+    const rep=r.acertado?`<span class="chip good">Repassado</span>${r.acertoData?`<div class="muted">${dBR(r.acertoData)}</div>`:""}`:`<span class="chip warn">A repassar</span>`;
+    const del=delConfirm===r.id?`<button class="btn small danger" data-del="${r.id}">Excluir mesmo</button> <button class="btn small" data-nodel>Não</button>`:`<button class="btn small" data-edit="${r.id}">Editar</button> <button class="btn small" data-askdel="${r.id}">Excluir</button>`;
+    return`<tr><td>${dBR(r.data)}</td><td>${esc(r.paciente)}${r.obs?`<div class="muted" title="${esc(r.obs)}">${esc(r.obs.length>40?r.obs.slice(0,40)+"…":r.obs)}</div>`:""}</td><td>${esc(r.procedimento)}${r.brinde&&r.brinde!=="Nenhum"?`<div class="muted">Brinde: ${esc(r.brinde)}</div>`:""}</td><td>${esc(r.local)}</td>
+      <td class="r">${fmt(r.valor)}</td><td class="r">${fmt(r.custo)}</td><td class="r">${fmt(lucro(r))}</td><td class="r">${fmt(r.comissao)}</td><td class="r">${fmt(larissa(r))}</td><td>${pag}</td><td>${rep}</td><td>${del}</td></tr>`}).join(""):`<tr><td colspan="12" class="empty">Nenhum atendimento encontrado.</td></tr>`;
+  const T=k=>f.reduce((s,r)=>s+k(r),0);
+  $("#listaFoot").innerHTML=f.length?`<tr><td colspan="4">Total (${f.length})</td><td class="r">${fmt(T(r=>+r.valor||0))}</td><td class="r">${fmt(T(r=>+r.custo||0))}</td><td class="r">${fmt(T(lucro))}</td><td class="r">${fmt(T(r=>+r.comissao||0))}</td><td class="r">${fmt(T(larissa))}</td><td colspan="3"></td></tr>`:"";
+  $("#maisBtn").hidden=f.length<=listLimit;$("#listaInfo").textContent=f.length>listLimit?`Mostrando ${listLimit} de ${f.length}`:"";
+}
+$("#lista").onclick=async e=>{
+  const t=e.target.closest("button");if(!t)return;
+  if(t.dataset.edit)editRow(t.dataset.edit);
+  else if(t.dataset.askdel){delConfirm=t.dataset.askdel;renderLista()}
+  else if("nodel" in t.dataset){delConfirm=null;renderLista()}
+  else if(t.dataset.del){t.disabled=true;try{await db.deleteRow(t.dataset.del);if(editingId===t.dataset.del)resetForm()}catch(err){msg($("#globalMsg"),writeErr(err),"err")}delConfirm=null;renderLista()}
+};
+["#lBusca","#lMes","#lStatus"].forEach(s=>$(s).addEventListener("input",()=>{listLimit=60;renderLista()}));
+$("#maisBtn").onclick=()=>{listLimit+=100;renderLista()};
+["#fPeriodo","#fMes","#fLocal","#fProc"].forEach(s=>$(s).addEventListener("change",()=>{$("#fMesWrap").hidden=$("#fPeriodo").value!=="mesesp";if(!$("#fMes").value)$("#fMes").value=today().slice(0,7);renderPainel()}));
+
+/* ---------- config ---------- */
+function renderCfg(){
+  $("#cPct").value=cfg.pctClinica;
+  $("#cLocais").value=(cfg.locais||[]).join("\n");
+  $("#cfgProcs").innerHTML=cfg.procedimentos.map((p,i)=>`<div class="cfg-row" data-i="${i}"><input aria-label="Procedimento" value="${esc(p.nome)}" data-k="nome"><input aria-label="Custo" type="number" step="0.01" value="${p.custo}" data-k="custo"><input aria-label="Preço sugerido" type="number" step="0.01" value="${p.preco??""}" data-k="preco"><button class="btn small" data-rm="${i}">Remover</button></div>`).join("");
+  $("#cfgBrindes").innerHTML=cfg.brindes.map((b,i)=>`<div class="cfg-row b" data-i="${i}"><input aria-label="Brinde" value="${esc(b.nome)}" data-k="nome"><input aria-label="Custo" type="number" step="0.01" value="${b.custo}" data-k="custo"><button class="btn small" data-rm="${i}">Remover</button></div>`).join("");
+}
+function readCfg(){
+  const rd=box=>[...box.querySelectorAll(".cfg-row")].map(r=>{const o={};r.querySelectorAll("input").forEach(i=>o[i.dataset.k]=i.type==="number"?(i.value===""?null:round2(i.value)):i.value.trim());return o}).filter(o=>o.nome);
+  return{...cfg,pctClinica:+$("#cPct").value||0,procedimentos:rd($("#cfgProcs")).map(p=>({...p,custo:p.custo||0})),brindes:rd($("#cfgBrindes")).map(b=>({...b,custo:b.custo||0})),locais:$("#cLocais").value.split("\n").map(s=>s.trim()).filter(Boolean)};
+}
+$("#cfgProcs").onclick=e=>{const b=e.target.closest("[data-rm]");if(b){cfg=readCfg();cfg.procedimentos.splice(+b.dataset.rm,1);renderCfg()}};
+$("#cfgBrindes").onclick=e=>{const b=e.target.closest("[data-rm]");if(b){cfg=readCfg();cfg.brindes.splice(+b.dataset.rm,1);renderCfg()}};
+$("#addProc").onclick=()=>{cfg=readCfg();cfg.procedimentos.push({nome:"",custo:0,preco:null});renderCfg();$("#cfgProcs").lastElementChild.querySelector("input").focus()};
+$("#addBrinde").onclick=()=>{cfg=readCfg();cfg.brindes.push({nome:"",custo:0});renderCfg();$("#cfgBrindes").lastElementChild.querySelector("input").focus()};
+$("#salvarCfg").onclick=async()=>{
+  if(!db)return;const n=readCfg();const b=$("#salvarCfg");b.disabled=true;
+  try{await db.saveCfg(n);cfg=n;$("#cfgMsg").textContent="Tabela salva. Os próximos lançamentos já usam os novos valores.";}
+  catch(e){$("#cfgMsg").textContent=writeErr(e)}b.disabled=false;
+};
+
+/* ---------- dados (Supabase) ---------- */
+const COLS={paciente:"paciente",data:"data",local:"local",procedimento:"procedimento",procedimentoOriginal:"procedimento_original",brinde:"brinde",valor:"valor",custo:"custo",pctClinica:"pct_clinica",comissao:"comissao",comissaoManual:"comissao_manual",forma:"forma",pagamentoDetalhe:"pagamento_detalhe",obs:"obs",acertado:"acertado",acertoData:"acerto_data",origem:"origem",criadoEm:"criado_em",atualizadoEm:"atualizado_em"};
+const toDb=o=>{const r={};for(const k in COLS)if(o[k]!==undefined)r[COLS[k]]=o[k]===""&&(k==="acertoData"||k==="atualizadoEm")?null:o[k];return r};
+const fromDb=r=>{const o={id:r.id};for(const k in COLS)o[k]=r[COLS[k]];o.valor=+o.valor||0;o.custo=+o.custo||0;o.comissao=+o.comissao||0;o.pctClinica=+o.pctClinica;o.data=(o.data||"").slice(0,10);o.acertoData=o.acertoData?o.acertoData.slice(0,10):null;o.obs=o.obs||"";o.paciente=o.paciente||"";return o};
+const chk=({error})=>{if(error)throw error};
+db={
+  async saveRow(id,data){if(id)chk(await sb.from("atendimentos").update(toDb(data)).eq("id",id));else chk(await sb.from("atendimentos").insert(toDb(data)));await loadRows()},
+  async deleteRow(id){chk(await sb.from("atendimentos").delete().eq("id",id));await loadRows()},
+  async markAcertado(ids,dia){for(let k=0;k<ids.length;k+=100)chk(await sb.from("atendimentos").update({acertado:true,acerto_data:dia}).in("id",ids.slice(k,k+100)));await loadRows()},
+  async addAcerto(a){chk(await sb.from("acertos").insert(a))},
+  async saveCfg(n){chk(await sb.from("config").upsert({id:"tabela",dados:n}));await loadCfg()}
+};
+async function loadRows(){
+  let all=[],from=0;
+  while(true){const {data,error}=await sb.from("atendimentos").select("*").range(from,from+999);if(error)throw error;all=all.concat(data);if(data.length<1000)break;from+=1000}
+  rows=all.map(fromDb).filter(r=>r.data&&r.paciente);loaded=true;
+  $("#sync").textContent=`${rows.length} atendimentos · atualizado ${new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}`;
+  refreshAll();
+}
+async function loadCfg(){
+  const {data,error}=await sb.from("config").select("dados").eq("id","tabela").maybeSingle();if(error)throw error;
+  if(data&&data.dados)cfg={...DEFAULT_CFG,...data.dados};
+  renderCfg();refreshAll();
+}
+let channel=null,reloadT=null;
+async function startApp(){
+  $("#loginView").hidden=true;$("#app").hidden=false;$("#btnSair").hidden=false;
+  try{await loadCfg();await loadRows()}
+  catch(e){console.error(e);$("#sync").textContent="Erro ao carregar";msg($("#globalMsg"),"Não foi possível carregar os dados. Recarregue a página.","err");return}
+  if(!channel){channel=sb.channel("mudancas").on("postgres_changes",{event:"*",schema:"public",table:"atendimentos"},()=>{clearTimeout(reloadT);reloadT=setTimeout(()=>loadRows().catch(()=>{}),600)})
+    .on("postgres_changes",{event:"*",schema:"public",table:"config"},()=>{if(!document.activeElement||!document.activeElement.closest("#v-tabela"))loadCfg().catch(()=>{})}).subscribe()}
+}
+function showLogin(){$("#app").hidden=true;$("#loginView").hidden=false;$("#lgEmail").focus()}
+$("#loginForm").onsubmit=async e=>{
+  e.preventDefault();const b=$("#lgBtn");b.disabled=true;$("#lgMsg").textContent="Entrando…";
+  const {error}=await sb.auth.signInWithPassword({email:$("#lgEmail").value.trim(),password:$("#lgSenha").value});
+  b.disabled=false;
+  if(error){$("#lgMsg").textContent="E-mail ou senha incorretos.";return}
+  $("#lgMsg").textContent="";$("#lgSenha").value="";startApp();
+};
+$("#btnSair").onclick=async()=>{await sb.auth.signOut();if(channel){sb.removeChannel(channel);channel=null}rows=[];loaded=false;showLogin()};
+
+/* ---------- boot ---------- */
+function refreshAll(){fillSelects();renderPainel();renderLista();if(!editingId)onProcChange();else updateCalc()}
+$("#iData").value=today();
+updateCalc();
+(async()=>{
+  if(!window.supabase||SUPABASE_URL.startsWith("__")){document.body.insertAdjacentHTML("afterbegin",'<div class="wrap"><div class="banner err" style="margin-top:16px">Painel ainda não configurado.</div></div>');return}
+  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true}});
+  const {data}=await sb.auth.getSession();
+  if(data&&data.session)startApp();else showLogin();
+  sb.auth.onAuthStateChange((ev)=>{if(ev==="SIGNED_OUT")showLogin()});
+})();
+})();
+</script>
+
+</body>
+</html>
