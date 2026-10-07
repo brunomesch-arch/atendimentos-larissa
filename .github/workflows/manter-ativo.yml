@@ -1,0 +1,13 @@
+name: Manter Supabase ativo
+on:
+  schedule:
+    - cron: "0 12 */3 * *"
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          curl -s -o /dev/null -w "%{http_code}\n" \
+            "https://vnzmnwdvbagpeugzgntz.supabase.co/rest/v1/config?select=id&limit=1" \
+            -H "apikey: sb_publishable_FRsc_1BpsTcaEYF4ULAvJw_fzTQTj5F"
