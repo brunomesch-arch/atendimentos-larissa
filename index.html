@@ -134,6 +134,23 @@ td .muted{color:var(--muted);font-size:12px}
 .cfg-row.b{grid-template-columns:minmax(0,2fr) minmax(0,1fr) auto}
 .cfg-head{font-size:12px;color:var(--muted);font-weight:600}
 @media (prefers-reduced-motion:no-preference){.bar-fill{transition:width .3s ease}}
+.banner.warn{background:var(--warn-soft);color:var(--warn);display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;justify-content:space-between}
+.banner.warn .btn.link{color:inherit;text-decoration:underline;font-weight:600}
+.badge{display:inline-block;min-width:18px;padding:0 5px;margin-left:6px;border-radius:99px;background:var(--bad);color:#fff;font-size:11px;line-height:18px;text-align:center;vertical-align:1px}
+/* metas */
+.metas{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.meta-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.meta-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.meta-top .l{display:block;font-size:13.5px;font-weight:700;overflow-wrap:anywhere}
+.meta-num{font-size:13.5px;color:var(--muted)}.meta-num b{font-size:22px;color:var(--fg);margin-right:4px}
+.meta-card .bar-track{position:relative}
+.meta-card .mark{position:absolute;top:0;bottom:0;width:2px;background:var(--fg);opacity:.55}
+.meta-card .bar-fill.done{background:var(--good)}
+.meta-card .actions{gap:6px}
+.btn.wa{background:#1f8f4e;border-color:#1f8f4e;color:#fff;text-decoration:none;display:inline-block}
+.fu-acts{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tel-edit{display:flex;gap:6px;align-items:center}.tel-edit input{width:150px;padding:5px 8px;font-size:13px}
+.cfg-row.fu{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
 </style>
 </head>
 <body>
@@ -154,6 +171,8 @@ td .muted{color:var(--muted);font-size:12px}
     <div class="brand"><h1>Atendimentos Larissa</h1><span id="sync" class="num">Carregando dados…</span></div>
     <nav class="tabs" role="tablist">
       <button role="tab" data-tab="painel" aria-selected="true">Painel</button>
+      <button role="tab" data-tab="follow" aria-selected="false">Follow-up<span class="badge" id="fuBadge" hidden></span></button>
+      <button role="tab" data-tab="metas" aria-selected="false">Metas</button>
       <button role="tab" data-tab="lancar" aria-selected="false">Lançamentos</button>
       <button role="tab" data-tab="tabela" aria-selected="false">Tabela de custos</button>
       <button id="btnSair" class="sair" hidden>Sair</button>
@@ -162,6 +181,7 @@ td .muted{color:var(--muted);font-size:12px}
 </header>
 
 <main class="wrap">
+  <div id="fuAlert" style="margin-top:16px" hidden></div>
   <div id="globalMsg"></div>
 
   <!-- PAINEL -->
@@ -180,6 +200,13 @@ td .muted{color:var(--muted);font-size:12px}
     </div>
 
     <div class="kpis" id="kpis"></div>
+
+    <div class="panel" id="metasPainelWrap" hidden>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <h2>Metas em andamento</h2><button class="btn link" type="button" data-goto="metas">Gerenciar metas</button>
+      </div>
+      <div class="metas" id="metasPainel"></div>
+    </div>
 
     <div class="panel">
       <div class="acerto">
@@ -214,9 +241,11 @@ td .muted{color:var(--muted);font-size:12px}
         <div class="tbl-wrap"><table><thead><tr><th>Paciente</th><th class="r">Atend.</th><th class="r">Faturado</th><th>Último</th></tr></thead><tbody id="topPac"></tbody></table></div>
       </div>
       <div class="panel">
-        <h2>Retorno de botox</h2>
-        <div class="sub">Última aplicação entre 4 e 8 meses atrás. Bom momento para chamar.</div>
-        <div class="tbl-wrap"><table><thead><tr><th>Paciente</th><th>Última aplicação</th><th class="r">Há</th></tr></thead><tbody id="retornos"></tbody></table></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+          <h2>Follow-up: abordar agora</h2><button class="btn link" type="button" data-goto="follow">Ver todos</button>
+        </div>
+        <div class="sub">Clientes no prazo de retorno, conforme os prazos definidos na aba Follow-up.</div>
+        <div class="tbl-wrap"><table><thead><tr><th>Paciente</th><th>Procedimento</th><th>Feito em</th><th class="r">Prazo</th></tr></thead><tbody id="retornos"></tbody></table></div>
       </div>
     </div>
 
@@ -224,6 +253,59 @@ td .muted{color:var(--muted);font-size:12px}
       <h2>Formas de pagamento</h2>
       <div class="bars" id="barsPag"></div>
     </div>
+  </section>
+
+  <!-- FOLLOW-UP -->
+  <section class="view" id="v-follow" hidden>
+    <div class="kpis" id="fuKpis"></div>
+    <div class="panel">
+      <h2>Para abordar agora</h2>
+      <div class="sub" id="fuSub">Clientes que completaram o prazo de follow-up contado da data do procedimento.</div>
+      <div class="tbl-wrap"><table class="num"><thead><tr><th>Paciente</th><th>Procedimento</th><th>Feito em</th><th>Follow-up</th><th>Venceu em</th><th>Contato</th><th></th></tr></thead><tbody id="fuAgora"></tbody></table></div>
+    </div>
+    <div class="panel">
+      <h2>Próximos 14 dias</h2>
+      <div class="tbl-wrap"><table class="num"><thead><tr><th>Paciente</th><th>Procedimento</th><th>Feito em</th><th>Follow-up</th><th>Vence em</th><th>Contato</th></tr></thead><tbody id="fuProx"></tbody></table></div>
+    </div>
+    <div class="panel">
+      <h2>Abordagens registradas</h2>
+      <div class="sub">As mais recentes. Use “Desfazer” se marcou por engano.</div>
+      <div class="tbl-wrap"><table class="num"><thead><tr><th>Paciente</th><th>Procedimento</th><th>Follow-up</th><th>Situação</th><th></th></tr></thead><tbody id="fuHist"></tbody></table></div>
+    </div>
+    <div class="panel">
+      <h2>Prazos de follow-up</h2>
+      <div class="sub">Meses após a data do procedimento, separados por vírgula. Cada prazo fica na lista até o próximo vencer (o último, por 60 dias).</div>
+      <div class="field" style="max-width:220px"><label for="fuMesesIn">Padrão para todos os procedimentos</label><input id="fuMesesIn" placeholder="4, 6"></div>
+      <div class="cfg-row fu cfg-head"><span>Procedimento</span><span>Meses (vazio = padrão, 0 = sem follow-up)</span></div>
+      <div id="fuPrazos" style="display:flex;flex-direction:column;gap:8px"></div>
+      <div class="actions"><button class="btn" type="button" id="fuMesesSalvar">Salvar prazos</button><span class="hint" id="fuMesesMsg"></span></div>
+    </div>
+    <div class="panel">
+      <h2>Mensagem do WhatsApp</h2>
+      <div class="sub">Texto que já vem escrito ao clicar em WhatsApp. Pode usar {primeiro_nome}, {nome}, {procedimento}, {meses} e {data}.</div>
+      <textarea id="fuMsgIn" rows="4"></textarea>
+      <div class="actions"><button class="btn" type="button" id="fuMsgSalvar">Salvar mensagem</button><button class="btn link" type="button" id="fuMsgPadrao">Voltar ao texto padrão</button><span class="hint" id="fuMsgMsg"></span></div>
+    </div>
+  </section>
+
+  <!-- METAS -->
+  <section class="view" id="v-metas" hidden>
+    <div class="panel">
+      <h2 id="metaTitle">Nova meta</h2>
+      <div class="sub">Quantidade de procedimentos ou valor que você quer alcançar no período (semana de segunda a domingo).</div>
+      <form id="metaForm" class="filters" autocomplete="off">
+        <div class="field"><label for="mPeriodo">Período</label>
+          <select id="mPeriodo"><option value="semana">Semana</option><option value="mes" selected>Mês</option><option value="semestre">Semestre</option><option value="ano">Ano</option></select></div>
+        <div class="field" style="flex:1 1 200px"><label for="mProc">Procedimento</label><select id="mProc"></select></div>
+        <div class="field"><label for="mTipo">Tipo de meta</label>
+          <select id="mTipo"><option value="qtd">Quantidade de procedimentos</option><option value="fat">Faturamento (R$)</option><option value="liq">Líquido Larissa (R$)</option></select></div>
+        <div class="field" style="max-width:160px"><label for="mAlvo" id="mAlvoLbl">Quantidade</label><input id="mAlvo" type="number" min="1" step="1" inputmode="numeric" required></div>
+        <button class="btn primary" type="submit" id="mSalvar">Criar meta</button>
+        <button class="btn" type="button" id="mCancelar" hidden>Cancelar edição</button>
+        <span class="hint" id="mMsg"></span>
+      </form>
+    </div>
+    <div class="metas" id="metasList"></div>
   </section>
 
   <!-- LANÇAMENTOS -->
@@ -245,7 +327,8 @@ td .muted{color:var(--muted);font-size:12px}
           <span class="hint" id="custoHint"></span></div>
         <div class="field"><label for="iForma">Forma de pagamento</label><select id="iForma"></select></div>
         <div class="field"><label for="iDet">Detalhe do pagamento</label><input id="iDet" placeholder="Ex.: 3x de 400"></div>
-        <div class="field span4"><label for="iObs">Observação</label><input id="iObs" placeholder="Opcional"></div>
+        <div class="field span2"><label for="iTel">Telefone / WhatsApp</label><input id="iTel" type="tel" inputmode="tel" placeholder="(11) 91234-5678"><span class="hint" id="telHint">Fica salvo para a paciente e aparece no follow-up.</span></div>
+        <div class="field span2"><label for="iObs">Observação</label><input id="iObs" placeholder="Opcional"></div>
         <div class="span4 calc num" id="calc"></div>
         <div class="span4 actions">
           <button type="submit" class="btn primary" id="btnSalvar">Salvar atendimento</button>
@@ -303,7 +386,7 @@ td .muted{color:var(--muted);font-size:12px}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <script>
 (function(){
-const DEFAULT_CFG={pctClinica:40,procedimentos:[],brindes:[{nome:"Nenhum",custo:0}],locais:[],formas:["Pix","Pix parcelado","Dinheiro","Pix e dinheiro","Crédito à vista","Crédito parcelado","Débito","Parcelado","À vista","Cortesia","Não pagou","Outro"]};
+const DEFAULT_CFG={pctClinica:40,procedimentos:[],brindes:[{nome:"Nenhum",custo:0}],locais:[],formas:["Pix","Pix parcelado","Dinheiro","Pix e dinheiro","Crédito à vista","Crédito parcelado","Débito","Parcelado","À vista","Cortesia","Não pagou","Outro"],metas:[],followups:{},followupMeses:[4,6],fuPrazosProc:{},fuMensagem:"",telefones:{}};
 const SUPABASE_URL="https://vnzmnwdvbagpeugzgntz.supabase.co", SUPABASE_KEY="sb_publishable_FRsc_1BpsTcaEYF4ULAvJw_fzTQTj5F";
 let sb=null, db=null, cfg=structuredClone(DEFAULT_CFG), cfgVersion=null, rows=[], loaded=false, editingId=null, listLimit=60;
 const $=s=>document.querySelector(s);
@@ -326,12 +409,15 @@ function msg(el,text,kind){el.innerHTML=text?`<div class="banner ${kind||"ok"}">
 /* ---------- tabs ---------- */
 function showTab(t){
   document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===t));
-  ["painel","lancar","tabela"].forEach(v=>$("#v-"+v).hidden=v!==t);
+  TABS.forEach(v=>$("#v-"+v).hidden=v!==t);
   try{localStorage.setItem("tab",t)}catch(e){}
   if(t==="tabela")renderCfg();
+  if(loaded)renderFuAlert();
 }
+const TABS=["painel","follow","metas","lancar","tabela"];
+document.addEventListener("click",e=>{const g=e.target.closest("[data-goto]");if(g)showTab(g.dataset.goto)});
 document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
-try{const t=location.hash.slice(1)||localStorage.getItem("tab");if(["painel","lancar","tabela"].includes(t))showTab(t)}catch(e){}
+try{const t=location.hash.slice(1)||localStorage.getItem("tab");if(TABS.includes(t))showTab(t)}catch(e){}
 
 /* ---------- period ---------- */
 function range(){
@@ -401,11 +487,6 @@ function renderPainel(){
   const tp=Object.values(byPac).sort((x,y)=>y.fat-x.fat).slice(0,8);
   $("#topPac").innerHTML=tp.length?tp.map(p=>`<tr><td>${esc(p.nome)}</td><td class="r num">${p.n}</td><td class="r num">${fmt(p.fat)}</td><td class="num">${dBR(p.ult)}</td></tr>`).join(""):`<tr><td colspan="4" class="empty">Nenhum atendimento no período.</td></tr>`;
 
-  // botox return (full history)
-  const lastBotox={};rows.forEach(r=>{if(/botox/i.test(r.procedimento)){const k=r.paciente.trim().toLowerCase();if(!lastBotox[k]||r.data>lastBotox[k].data)lastBotox[k]={nome:r.paciente,data:r.data}}});
-  const now=new Date();const days=s=>Math.floor((now-new Date(+s.slice(0,4),+s.slice(5,7)-1,+s.slice(8,10)))/864e5);
-  const ret=Object.values(lastBotox).map(p=>({...p,d:days(p.data)})).filter(p=>p.d>=120&&p.d<=240).sort((x,y)=>y.d-x.d);
-  $("#retornos").innerHTML=ret.length?ret.slice(0,12).map(p=>`<tr><td>${esc(p.nome)}</td><td class="num">${dBR(p.data)}</td><td class="r num">${Math.round(p.d/30.4)} meses</td></tr>`).join("")+(ret.length>12?`<tr><td colspan="3" class="small">E mais ${ret.length-12} pacientes nessa janela.</td></tr>`:""):`<tr><td colspan="3" class="empty">Nenhuma paciente nessa janela agora.</td></tr>`;
 }
 
 function drawMonthly(months,byM,hi){
@@ -463,7 +544,9 @@ function writeErr(e){console.error(e);
   return"Não foi possível salvar agora. Verifique a conexão e tente de novo."}
 
 /* ---------- form ---------- */
-let custoManual=false, lastSugerido=null;
+let custoManual=false, lastSugerido=null, telAuto=null;
+// preenche o telefone já salvo quando escolhe a paciente
+$("#iPaciente").addEventListener("input",()=>{const t=telDe($("#iPaciente").value);if(!$("#iTel").value||$("#iTel").value===telAuto){$("#iTel").value=t;telAuto=t}});
 function procCfg(n){return cfg.procedimentos.find(p=>p.nome===n)}
 function brindeCfg(n){return cfg.brindes.find(p=>p.nome===n)}
 function fillSelects(){
@@ -502,7 +585,7 @@ function updateCalc(){
 }
 function resetForm(){
   editingId=null;custoManual=false;lastSugerido=null;
-  $("#form").reset();$("#iData").value=today();
+  $("#form").reset();$("#iData").value=today();telAuto=null;
   $("#formTitle").textContent="Novo atendimento";$("#btnSalvar").textContent="Salvar atendimento";$("#btnCancelar").hidden=true;
   $("#iValor").value="";onProcChange();
 }
@@ -514,6 +597,7 @@ function editRow(id){
   if(r.forma&&![...$("#iForma").options].some(o=>o.value===r.forma))$("#iForma").insertAdjacentHTML("beforeend",`<option>${esc(r.forma)}</option>`);
   if(![...$("#iLocal").options].some(o=>o.value===r.local))$("#iLocal").insertAdjacentHTML("beforeend",`<option>${esc(r.local)}</option>`);
   $("#iPaciente").value=r.paciente;$("#iData").value=r.data;$("#iLocal").value=r.local;$("#iProc").value=r.procedimento;$("#iProcOutroWrap").hidden=true;
+  $("#iTel").value=telDe(r.paciente);telAuto=null;
   $("#iBrinde").value=r.brinde||"Nenhum";$("#iValor").value=r.valor;$("#iCusto").value=r.custo;$("#iForma").value=r.forma||"";$("#iDet").value=r.pagamentoDetalhe||"";$("#iObs").value=r.obs||"";
   lastSugerido=null;
   $("#formTitle").textContent="Editando atendimento de "+r.paciente;$("#btnSalvar").textContent="Salvar alterações";$("#btnCancelar").hidden=false;
@@ -538,7 +622,10 @@ $("#form").onsubmit=async e=>{
   const btn=$("#btnSalvar");btn.disabled=true;
   try{
     await db.saveRow(editingId,data);
-    const nome=data.paciente;resetForm();$("#formMsg").textContent=(prev?"Alterações salvas: ":"Atendimento salvo: ")+nome+".";
+    const nome=data.paciente,tel=$("#iTel").value.trim();
+    let telErro=false;
+    if(tel&&tel!==telDe(nome)){try{await salvarTel(pacKey(nome),tel)}catch(err){console.error(err);telErro=true}}
+    resetForm();$("#formMsg").textContent=(prev?"Alterações salvas: ":"Atendimento salvo: ")+nome+"."+(telErro?" O telefone não foi salvo, tente de novo.":"");
     setTimeout(()=>{$("#formMsg").textContent=""},5000);
   }catch(err){$("#formMsg").textContent=writeErr(err)}
   btn.disabled=false;
@@ -594,6 +681,190 @@ $("#salvarCfg").onclick=async()=>{
   catch(e){$("#cfgMsg").textContent=writeErr(e)}b.disabled=false;
 };
 
+/* ---------- follow-up ---------- */
+const FU_JANELA=60; // dias em que o último prazo continua na lista
+const MSG_PADRAO="Oi, {primeiro_nome}! Tudo bem? Aqui é a Larissa. Já faz {meses} desde o seu {procedimento} e queria saber como você está se sentindo com o resultado. Se quiser agendar um retorno, é só me chamar!";
+const pDate=s=>new Date(+s.slice(0,4),+s.slice(5,7)-1,+s.slice(8,10));
+const diasEntre=(a,b)=>Math.round((pDate(b)-pDate(a))/864e5);
+const addDias=(s,n)=>{const d=pDate(s);d.setDate(d.getDate()+n);return iso(d)};
+function addMeses(s,n){const y=+s.slice(0,4),m=+s.slice(5,7)-1,d=+s.slice(8,10);return iso(new Date(y,m+n,Math.min(d,new Date(y,m+n+1,0).getDate())))}
+const parseMeses=v=>[...new Set(String(v).split(/[,;\s]+/).map(Number).filter(n=>Number.isInteger(n)&&n>0&&n<=60))].sort((a,b)=>a-b);
+function fuMeses(){const m=parseMeses((cfg.followupMeses||[]).join(","));return m.length?m:[4,6]}
+// prazos do procedimento: lista própria, [] = sem follow-up, ou o padrão
+function mesesDe(proc){const o=cfg.fuPrazosProc||{};return Array.isArray(o[proc])?o[proc]:fuMeses()}
+const mesesTxt=m=>m+(m===1?" mês":" meses");
+const pacKey=n=>String(n||"").trim().replace(/\s+/g," ").toLowerCase();
+const telDe=n=>(cfg.telefones||{})[pacKey(n)]||"";
+function waNum(t){let d=String(t).replace(/\D/g,"");if(!d)return"";if(d.length<=11)d="55"+d.replace(/^0+/,"");return d}
+function waLink(f){
+  const tel=waNum(telDe(f.nome));if(!tel)return"";
+  const txt=(cfg.fuMensagem||MSG_PADRAO).replace(/\{primeiro_nome\}/g,f.nome.split(" ")[0]).replace(/\{nome\}/g,f.nome).replace(/\{procedimento\}/g,f.proc).replace(/\{meses\}/g,mesesTxt(f.meses)).replace(/\{data\}/g,dBR(f.data));
+  return"https://wa.me/"+tel+"?text="+encodeURIComponent(txt);
+}
+let fu={agora:[],prox:[],hist:[]},telEdit=null;
+function computeFollowups(){
+  const t=today(),done=cfg.followups||{},last={};
+  // último atendimento de cada paciente em cada procedimento
+  rows.forEach(r=>{const k=pacKey(r.paciente)+"|"+r.procedimento;if(!last[k]||r.data>last[k].data)last[k]=r});
+  const agora=[],prox=[],hist=[];
+  Object.entries(last).forEach(([k,r])=>{const ms=mesesDe(r.procedimento);ms.forEach((m,i)=>{
+    const due=addMeses(r.data,m),fim=i<ms.length-1?addMeses(r.data,ms[i+1]):addDias(due,FU_JANELA);
+    const key=k+"|"+r.data+"|"+m,it={key,nome:r.paciente.trim(),proc:r.procedimento,data:r.data,meses:m,due};
+    if(done[key]){hist.push({...it,st:done[key]});return}
+    if(t>=due&&t<fim)agora.push({...it,atraso:diasEntre(due,t)});
+    else if(t<due&&diasEntre(t,due)<=14)prox.push({...it,falta:diasEntre(t,due)});
+  })});
+  agora.sort((a,b)=>a.due.localeCompare(b.due)||a.nome.localeCompare(b.nome,"pt-BR"));
+  prox.sort((a,b)=>a.due.localeCompare(b.due)||a.nome.localeCompare(b.nome,"pt-BR"));
+  hist.sort((a,b)=>(b.st.em||"").localeCompare(a.st.em||""));
+  fu={agora,prox,hist};
+}
+function contatoCell(f){
+  const k=pacKey(f.nome);
+  if(telEdit===k)return`<div class="tel-edit"><input type="tel" inputmode="tel" data-telin="${esc(k)}" value="${esc(telDe(f.nome))}" placeholder="(11) 91234-5678" aria-label="Telefone de ${esc(f.nome)}"><button class="btn small primary" data-telsave="${esc(k)}">Salvar</button><button class="btn small" data-telcancel>Cancelar</button></div>`;
+  const tel=telDe(f.nome),link=waLink(f);
+  return tel?`<div class="fu-acts"><a class="btn small wa" href="${esc(link)}" target="_blank" rel="noopener">WhatsApp</a><button class="btn link" data-teledit="${esc(k)}" title="Alterar telefone">${esc(tel)}</button></div>`
+    :`<button class="btn small" data-teledit="${esc(k)}">Adicionar telefone</button>`;
+}
+function renderFollow(){
+  if(!loaded)return;
+  computeFollowups();
+  const mes=today().slice(0,7),feitosMes=fu.hist.filter(h=>h.st.acao==="feito"&&(h.st.em||"").startsWith(mes)).length;
+  $("#fuKpis").innerHTML=[["Para abordar agora",fu.agora.length,fu.agora.length?"Clientes no prazo de follow-up":"Nenhuma pendência",fu.agora.length>0],
+    ["Próximos 14 dias",fu.prox.length,"Prazos que vencem em breve"],["Abordadas este mês",feitosMes,"Marcadas como feitas"]]
+    .map(k=>`<div class="kpi${k[3]?" hl":""}"><span class="l">${k[0]}</span><span class="v num">${k[1]}</span><span class="s">${k[2]}</span></div>`).join("");
+  $("#fuSub").textContent=`Clientes que completaram o prazo de follow-up do procedimento (padrão: ${fuMeses().map(mesesTxt).join(" e ")}). Marque quando fizer o contato.`;
+  $("#fuAgora").innerHTML=fu.agora.length?fu.agora.map(f=>`<tr><td>${esc(f.nome)}</td><td>${esc(f.proc)}</td><td>${dBR(f.data)}</td><td><span class="chip ${f.atraso>14?"bad":"warn"}">${mesesTxt(f.meses)}</span></td><td>${dBR(f.due)}${f.atraso?`<div class="muted">há ${f.atraso} ${f.atraso===1?"dia":"dias"}</div>`:`<div class="muted">hoje</div>`}</td>
+    <td>${contatoCell(f)}</td><td><button class="btn small primary" data-fu="feito" data-k="${esc(f.key)}">Abordada</button> <button class="btn small" data-fu="dispensado" data-k="${esc(f.key)}">Dispensar</button></td></tr>`).join(""):`<tr><td colspan="7" class="empty">Ninguém para abordar agora.</td></tr>`;
+  $("#fuProx").innerHTML=fu.prox.length?fu.prox.map(f=>`<tr><td>${esc(f.nome)}</td><td>${esc(f.proc)}</td><td>${dBR(f.data)}</td><td>${mesesTxt(f.meses)}</td><td>${dBR(f.due)}<div class="muted">em ${f.falta} ${f.falta===1?"dia":"dias"}</div></td><td>${contatoCell(f)}</td></tr>`).join(""):`<tr><td colspan="6" class="empty">Nenhum prazo nos próximos 14 dias.</td></tr>`;
+  const h=fu.hist.slice(0,20);
+  $("#fuHist").innerHTML=h.length?h.map(f=>`<tr><td>${esc(f.nome)}</td><td>${esc(f.proc)}<div class="muted">feito em ${dBR(f.data)}</div></td><td>${mesesTxt(f.meses)}</td><td>${f.st.acao==="feito"?`<span class="chip good">Abordada</span>`:`<span class="chip warn">Dispensada</span>`}<div class="muted">${dBR(f.st.em)}</div></td><td><button class="btn small" data-fu="desfazer" data-k="${esc(f.key)}">Desfazer</button></td></tr>`).join(""):`<tr><td colspan="5" class="empty">Nenhuma abordagem registrada ainda.</td></tr>`;
+  renderFuCfg();
+  // resumo no Painel
+  const ag=fu.agora;
+  $("#retornos").innerHTML=ag.length?ag.slice(0,8).map(f=>`<tr><td>${esc(f.nome)}</td><td>${esc(f.proc)}</td><td class="num">${dBR(f.data)}</td><td class="r"><span class="chip ${f.atraso>14?"bad":"warn"}">${mesesTxt(f.meses)}</span></td></tr>`).join("")+(ag.length>8?`<tr><td colspan="4" class="small">E mais ${ag.length-8} na aba Follow-up.</td></tr>`:""):`<tr><td colspan="4" class="empty">Ninguém para abordar agora.</td></tr>`;
+  const n=ag.length;$("#fuBadge").hidden=!n;$("#fuBadge").textContent=n;
+  document.title=(n?`(${n}) `:"")+"Atendimentos Larissa";
+  renderFuAlert();
+}
+function renderFuCfg(){
+  const foco=document.activeElement;
+  if(foco!==$("#fuMesesIn"))$("#fuMesesIn").value=fuMeses().join(", ");
+  if(foco!==$("#fuMsgIn"))$("#fuMsgIn").value=cfg.fuMensagem||MSG_PADRAO;
+  if(foco&&foco.closest("#fuPrazos"))return;
+  const o=cfg.fuPrazosProc||{},procs=[...new Set([...cfg.procedimentos.map(p=>p.nome),...rows.map(r=>r.procedimento),...Object.keys(o)])].filter(Boolean).sort((a,b)=>a.localeCompare(b,"pt-BR"));
+  $("#fuPrazos").innerHTML=procs.map(p=>`<div class="cfg-row fu"><span style="overflow-wrap:anywhere">${esc(p)}</span><input data-proc="${esc(p)}" aria-label="Prazos de ${esc(p)}" placeholder="padrão (${fuMeses().join(", ")})" value="${Array.isArray(o[p])?(o[p].length?o[p].join(", "):"0"):""}"></div>`).join("")||`<div class="empty">Nenhum procedimento cadastrado.</div>`;
+}
+let fuAlertFechado=false;
+try{fuAlertFechado=sessionStorage.getItem("fuAlert")===today()}catch(e){}
+function renderFuAlert(){
+  const el=$("#fuAlert"),n=fu.agora.length,aba=$("#v-follow").hidden===false;
+  if(!loaded||!n||aba||fuAlertFechado){el.hidden=true;return}
+  const nomes=[...new Set(fu.agora.map(f=>f.nome))],lista=nomes.slice(0,3).join(", ")+(nomes.length>3?` e mais ${nomes.length-3}`:"");
+  el.hidden=false;
+  el.innerHTML=`<div class="banner warn"><span><b>Follow-up:</b> ${n===1?"1 cliente para abordar":n+" abordagens pendentes"} — ${esc(lista)}.</span><span class="actions"><button class="btn link" type="button" data-goto="follow">Ver lista</button><button class="btn link" type="button" id="fuFechar">Fechar</button></span></div>`;
+  $("#fuFechar").onclick=()=>{fuAlertFechado=true;try{sessionStorage.setItem("fuAlert",today())}catch(e){}renderFuAlert()};
+}
+async function salvarTel(k,v){await db.saveCfgKey("telefones",cur=>{const o={...(cur||{})};if(v)o[k]=v;else delete o[k];return o})}
+document.querySelector("#v-follow").addEventListener("click",async e=>{
+  const b=e.target.closest("button");if(!b||!db)return;
+  if(b.dataset.teledit){telEdit=b.dataset.teledit;renderFollow();const i=document.querySelector(`[data-telin="${CSS.escape(telEdit)}"]`);if(i)i.focus();return}
+  if("telcancel" in b.dataset){telEdit=null;renderFollow();return}
+  if(b.dataset.telsave){const k=b.dataset.telsave,i=document.querySelector(`[data-telin="${CSS.escape(k)}"]`);b.disabled=true;
+    try{telEdit=null;await salvarTel(k,i?i.value.trim():"")}catch(err){b.disabled=false;msg($("#globalMsg"),writeErr(err),"err")}return}
+  if(!b.dataset.fu)return;
+  const k=b.dataset.k,acao=b.dataset.fu;b.disabled=true;
+  try{await db.saveCfgKey("followups",cur=>{const o={...(cur||{})};if(acao==="desfazer")delete o[k];else o[k]={acao,em:today()};return o})}
+  catch(err){b.disabled=false;msg($("#globalMsg"),writeErr(err),"err")}
+});
+document.querySelector("#v-follow").addEventListener("keydown",e=>{const i=e.target.closest("[data-telin]");if(i&&e.key==="Enter"){e.preventDefault();i.parentElement.querySelector("[data-telsave]").click()}else if(i&&e.key==="Escape"){telEdit=null;renderFollow()}});
+$("#fuMesesSalvar").onclick=async()=>{
+  const v=parseMeses($("#fuMesesIn").value);
+  if(!v.length){$("#fuMesesMsg").textContent="Informe pelo menos um prazo padrão em meses, ex.: 4, 6.";return}
+  const por={};
+  for(const i of document.querySelectorAll("#fuPrazos [data-proc]")){const t=i.value.trim();if(!t)continue;
+    if(/^(0|n[aã]o|-)$/i.test(t)){por[i.dataset.proc]=[];continue}
+    const m=parseMeses(t);if(!m.length){$("#fuMesesMsg").textContent=`Prazo inválido em “${i.dataset.proc}”. Use meses separados por vírgula, ou 0.`;i.focus();return}
+    por[i.dataset.proc]=m}
+  const b=$("#fuMesesSalvar");b.disabled=true;document.activeElement.blur();
+  try{await db.saveCfgKeys({followupMeses:()=>v,fuPrazosProc:()=>por});$("#fuMesesMsg").textContent="Prazos salvos."}
+  catch(err){$("#fuMesesMsg").textContent=writeErr(err)}b.disabled=false;
+};
+$("#fuMsgSalvar").onclick=async()=>{
+  const v=$("#fuMsgIn").value.trim(),b=$("#fuMsgSalvar");b.disabled=true;
+  try{await db.saveCfgKey("fuMensagem",()=>v===MSG_PADRAO?"":v);$("#fuMsgMsg").textContent="Mensagem salva."}
+  catch(err){$("#fuMsgMsg").textContent=writeErr(err)}b.disabled=false;
+};
+$("#fuMsgPadrao").onclick=()=>{$("#fuMsgIn").value=MSG_PADRAO;$("#fuMsgMsg").textContent="Clique em Salvar mensagem para confirmar."};
+
+/* ---------- metas ---------- */
+const PER_NOME={semana:"Semana",mes:"Mês",semestre:"Semestre",ano:"Ano"};
+const MESES_LONGO=["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+function periodo(p,ref){
+  const y=ref.getFullYear(),m=ref.getMonth();
+  switch(p){
+    case "semana":{const wd=(ref.getDay()+6)%7,a=new Date(y,m,ref.getDate()-wd),b=new Date(y,m,ref.getDate()-wd+6);return[iso(a),iso(b),`Semana de ${dBR(iso(a)).slice(0,5)} a ${dBR(iso(b)).slice(0,5)}`]}
+    case "mes":return[iso(new Date(y,m,1)),iso(new Date(y,m+1,0)),MESES_LONGO[m]+" de "+y];
+    case "semestre":{const s=m<6?0:6;return[iso(new Date(y,s,1)),iso(new Date(y,s+6,0)),(s?"2º":"1º")+" semestre de "+y]}
+    default:return[iso(new Date(y,0,1)),iso(new Date(y,11,31)),"Ano de "+y];
+  }
+}
+function refAnterior(p,ref){const y=ref.getFullYear(),m=ref.getMonth();return p==="semana"?new Date(y,m,ref.getDate()-7):p==="mes"?new Date(y,m-1,1):p==="semestre"?new Date(y,m-6,1):new Date(y-1,0,1)}
+const TIPO={qtd:{nome:"Quantidade",val:()=>1,f:v=>String(Math.round(v)),fk:v=>String(Math.round(v)),un:" procedimentos"},
+  fat:{nome:"Faturamento",val:r=>+r.valor||0,f:fmt,fk:fmtK,un:""},liq:{nome:"Líquido Larissa",val:larissa,f:fmt,fk:fmtK,un:""}};
+const tipoDe=mt=>TIPO[mt.tipo]||TIPO.qtd;
+const contaProc=(mt,a,b)=>{const t=tipoDe(mt);return round2(rows.filter(r=>r.data>=a&&r.data<=b&&(!mt.procedimento||r.procedimento===mt.procedimento)).reduce((s,r)=>s+t.val(r),0))};
+const nfmt=v=>v.toLocaleString("pt-BR",{maximumFractionDigits:1});
+let metaEdit=null,metaDel=null;
+function metaCard(mt,full){
+  const t=today(),[a,b,label]=periodo(mt.periodo,new Date()),n=contaProc(mt,a,b),alvo=+mt.alvo||1,tp=tipoDe(mt);
+  const total=diasEntre(a,b)+1,passou=diasEntre(a,t)+1,resta=total-passou+1,esperado=alvo*passou/total;
+  const falta=Math.max(0,alvo-n),p=Math.min(100,n/alvo*100);
+  const st=n>=alvo?["good","Meta batida"]:n>=esperado-1e-9?["good","No ritmo"]:["warn","Abaixo do ritmo"];
+  const un=mt.periodo==="semana"?["dia",1]:mt.periodo==="mes"?["semana",7]:["mês",30.4];
+  const porUn=falta/(resta/un[1]),ritmo=falta?`Faltam ${tp.fk(falta)} · ${resta} ${resta===1?"dia restante":"dias restantes"}`+(resta>un[1]?` · ~${mt.tipo&&mt.tipo!=="qtd"?fmtK(porUn):nfmt(porUn)} por ${un[0]}`:""):(n>alvo?`Superou em ${tp.fk(n-alvo)}`:"Meta alcançada");
+  const [pa,pb]=periodo(mt.periodo,refAnterior(mt.periodo,new Date())),np=contaProc(mt,pa,pb);
+  const acts=!full?"":metaDel===mt.id?`<div class="actions"><button class="btn small danger" data-mdel="${esc(mt.id)}">Remover mesmo</button><button class="btn small" data-mno>Não</button></div>`
+    :`<div class="actions"><button class="btn small" data-medit="${esc(mt.id)}">Editar</button><button class="btn small" data-mask="${esc(mt.id)}">Remover</button></div>`;
+  return`<div class="meta-card"><div class="meta-top"><div><span class="l">${PER_NOME[mt.periodo]||mt.periodo} · ${tp.nome} · ${esc(mt.procedimento||"Todos os procedimentos")}</span><span class="small">${label}</span></div><span class="chip ${st[0]}">${st[1]}</span></div>
+    <div class="meta-num num"><b>${tp.f(n)}</b>de ${tp.f(alvo)}${tp.un} · ${pct(n/alvo)}</div>
+    <div class="bar-track" title="A marca indica onde você deveria estar hoje"><div class="bar-fill${n>=alvo?" done":""}" style="width:${Math.max(n?2:0,p)}%"></div><span class="mark" style="left:calc(${Math.min(100,passou/total*100)}% - 1px)"></span></div>
+    <div class="small num">${ritmo}</div><div class="small num">Período anterior: ${tp.fk(np)} de ${tp.fk(alvo)}${np>=alvo?" (batida)":""}</div>${acts}</div>`;
+}
+function renderMetas(){
+  const ms=(cfg.metas||[]).slice().sort((x,y)=>Object.keys(PER_NOME).indexOf(x.periodo)-Object.keys(PER_NOME).indexOf(y.periodo)||(x.procedimento||"").localeCompare(y.procedimento||"","pt-BR"));
+  const procs=[...new Set([...cfg.procedimentos.map(p=>p.nome),...rows.map(r=>r.procedimento)])].filter(Boolean).sort((a,b)=>a.localeCompare(b,"pt-BR"));
+  const sel=$("#mProc"),v=sel.value;
+  sel.innerHTML=`<option value="">Todos os procedimentos</option>`+procs.map(p=>`<option>${esc(p)}</option>`).join("");
+  if(v&&!procs.includes(v))sel.insertAdjacentHTML("beforeend",`<option>${esc(v)}</option>`);sel.value=v;
+  if(!loaded)return;
+  $("#metasList").innerHTML=ms.length?ms.map(m=>metaCard(m,true)).join(""):`<div class="empty">Nenhuma meta criada ainda. Use o formulário acima para criar a primeira.</div>`;
+  $("#metasPainelWrap").hidden=!ms.length;
+  $("#metasPainel").innerHTML=ms.map(m=>metaCard(m,false)).join("");
+}
+function tipoMetaUI(){const q=$("#mTipo").value==="qtd";$("#mAlvoLbl").textContent=q?"Quantidade":"Valor (R$)";$("#mAlvo").step=q?"1":"0.01";$("#mAlvo").min=q?"1":"0.01"}
+$("#mTipo").onchange=tipoMetaUI;
+function resetMeta(){metaEdit=null;$("#metaForm").reset();$("#mPeriodo").value="mes";tipoMetaUI();$("#metaTitle").textContent="Nova meta";$("#mSalvar").textContent="Criar meta";$("#mCancelar").hidden=true}
+$("#mCancelar").onclick=resetMeta;
+$("#metaForm").onsubmit=async e=>{
+  e.preventDefault();if(!db)return;
+  const tipo=$("#mTipo").value,alvo=tipo==="qtd"?Math.round(+$("#mAlvo").value):round2($("#mAlvo").value);if(!(alvo>0)){$("#mMsg").textContent="Informe um valor maior que zero.";return}
+  const mt={id:metaEdit||Date.now().toString(36)+Math.random().toString(36).slice(2,6),periodo:$("#mPeriodo").value,procedimento:$("#mProc").value,tipo,alvo};
+  const b=$("#mSalvar");b.disabled=true;
+  try{await db.saveCfgKey("metas",cur=>{const l=(cur||[]).filter(x=>x.id!==mt.id);l.push(mt);return l});$("#mMsg").textContent=metaEdit?"Meta atualizada.":"Meta criada.";resetMeta();setTimeout(()=>{$("#mMsg").textContent=""},4000)}
+  catch(err){$("#mMsg").textContent=writeErr(err)}b.disabled=false;
+};
+$("#metasList").onclick=async e=>{
+  const t=e.target.closest("button");if(!t)return;
+  if(t.dataset.medit){const m=(cfg.metas||[]).find(x=>x.id===t.dataset.medit);if(!m)return;metaEdit=m.id;$("#mPeriodo").value=m.periodo;
+    if(![...$("#mProc").options].some(o=>o.value===m.procedimento))$("#mProc").insertAdjacentHTML("beforeend",`<option>${esc(m.procedimento)}</option>`);
+    $("#mProc").value=m.procedimento;$("#mTipo").value=m.tipo||"qtd";tipoMetaUI();$("#mAlvo").value=m.alvo;$("#metaTitle").textContent="Editando meta";$("#mSalvar").textContent="Salvar alterações";$("#mCancelar").hidden=false;$("#metaForm").scrollIntoView({behavior:"smooth",block:"center"})}
+  else if(t.dataset.mask){metaDel=t.dataset.mask;renderMetas()}
+  else if("mno" in t.dataset){metaDel=null;renderMetas()}
+  else if(t.dataset.mdel){t.disabled=true;const id=t.dataset.mdel;metaDel=null;
+    try{await db.saveCfgKey("metas",cur=>(cur||[]).filter(x=>x.id!==id));if(metaEdit===id)resetMeta()}catch(err){msg($("#globalMsg"),writeErr(err),"err");renderMetas()}}
+};
+
 /* ---------- dados (Supabase) ---------- */
 const COLS={paciente:"paciente",data:"data",local:"local",procedimento:"procedimento",procedimentoOriginal:"procedimento_original",brinde:"brinde",valor:"valor",custo:"custo",pctClinica:"pct_clinica",comissao:"comissao",comissaoManual:"comissao_manual",forma:"forma",pagamentoDetalhe:"pagamento_detalhe",obs:"obs",acertado:"acertado",acertoData:"acerto_data",origem:"origem",criadoEm:"criado_em",atualizadoEm:"atualizado_em"};
 const toDb=o=>{const r={};for(const k in COLS)if(o[k]!==undefined)r[COLS[k]]=o[k]===""&&(k==="acertoData"||k==="atualizadoEm")?null:o[k];return r};
@@ -604,7 +875,16 @@ db={
   async deleteRow(id){chk(await sb.from("atendimentos").delete().eq("id",id));await loadRows()},
   async markAcertado(ids,dia){for(let k=0;k<ids.length;k+=100)chk(await sb.from("atendimentos").update({acertado:true,acerto_data:dia}).in("id",ids.slice(k,k+100)));await loadRows()},
   async addAcerto(a){chk(await sb.from("acertos").insert(a))},
-  async saveCfg(n){chk(await sb.from("config").upsert({id:"tabela",dados:n}));await loadCfg()}
+  async saveCfg(n){chk(await sb.from("config").upsert({id:"tabela",dados:n}));await loadCfg()},
+  // grava só uma chave da config (metas, follow-ups), partindo da versão salva no banco
+  async saveCfgKeys(fns){
+    const {data,error}=await sb.from("config").select("dados").eq("id","tabela").maybeSingle();if(error)throw error;
+    const base=data&&data.dados?{...data.dados}:structuredClone(cfg),novo={};
+    for(const k in fns)base[k]=novo[k]=fns[k](base[k]);
+    chk(await sb.from("config").upsert({id:"tabela",dados:base}));
+    cfg={...cfg,...novo};refreshAll();
+  },
+  saveCfgKey(k,fn){return this.saveCfgKeys({[k]:fn})}
 };
 async function loadRows(){
   let all=[],from=0;
@@ -637,7 +917,7 @@ $("#loginForm").onsubmit=async e=>{
 $("#btnSair").onclick=async()=>{await sb.auth.signOut();if(channel){sb.removeChannel(channel);channel=null}rows=[];loaded=false;showLogin()};
 
 /* ---------- boot ---------- */
-function refreshAll(){fillSelects();renderPainel();renderLista();if(!editingId)onProcChange();else updateCalc()}
+function refreshAll(){fillSelects();renderPainel();renderLista();renderFollow();renderMetas();if(!editingId)onProcChange();else updateCalc()}
 $("#iData").value=today();
 updateCalc();
 (async()=>{
